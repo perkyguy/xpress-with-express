@@ -1,6 +1,6 @@
 # Xpress with Express (and NodeJS)
 
-This is a project which goes along with an [MPLab Xpress Example](http://link)
+This is a project which goes along with an [MPLab Xpress Example](https://mplabxpress.microchip.com/mplabcloud/Example/Details/193)
 
 It uses NodeJS to set up web server, and creates a socket connectoin to an MPLab Xpress Evaluation Board with an attached Mikro Elektronika WiFly Click Board. 
 From the web page, you are then able to set a "relay" (this is just an LED for now) perform ADC reads for the on-board potentiometer.   
