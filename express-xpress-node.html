@@ -8,6 +8,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="http://bernii.github.io/gauge.js/dist/gauge.min.js"></script>
 </head>
 
 <body>
@@ -17,6 +18,30 @@
         var auto_adcc_interval;
         console.log('We know the relay as shut right now, so if you enable it and come back, then we don\'t get the current status. Just an FYI...');
         $(document).ready(function() {
+            var target = document.getElementById('adcc-progress'); // your canvas element
+            var gauge = new Gauge(target).setOptions({
+                lines: 12, // The number of lines to draw
+                angle: 0.15, // The length of each line
+                lineWidth: 0.44, // The line thickness
+                pointer: {
+                    length: 0.72, // The radius of the inner circle
+                    strokeWidth: 0.038, // The rotation offset
+                    color: '#000000' // Fill color
+                },
+                limitMax: 'true', // If true, the pointer will not go past the end of the gauge
+                colorStart: '#6FADCF', // Colors
+                colorStop: '#8FC0DA', // just experiment with them
+                strokeColor: '#E0E0E0', // to see which ones work best for you
+                generateGradient: true,
+                percentColors: [
+                    [0.0, "#a9d70b"],
+                    [0.50, "#f9c802"],
+                    [1.0, "#ff0000"]
+                ]
+            }); // create sexy gauge!
+            gauge.maxValue = 1024; // set max gauge value
+            gauge.animationSpeed = 1; // set animation speed (32 is default value)
+            gauge.set(0);
             $(".relay-action").click(function() {
                 var action = $(this).attr('data-relay-action');
                 if (action == "toggle") {
@@ -24,6 +49,8 @@
                 } else {
                     relay_state = (action == "enable");
                 }
+                $("#relay-toggle-btn").addClass(relay_state ? 'btn-success' : 'btn-warning');
+                $("#relay-toggle-btn").removeClass(!relay_state ? 'btn-success' : 'btn-warning');
                 $.get('/relay/' + (relay_state ? 'enable' : 'disable'), function(res) {
                     toastr.success(res.msg, 'Survey says?!');
                 })
@@ -32,12 +59,13 @@
                 auto_adcc = !auto_adcc;
                 var interval = 250;
                 if (auto_adcc) {
-                    toastr.success("Starting to grab ADCC values every " + interval + "ms", 'ADCC Grabbing');
+                    toastr.info("Starting to grab ADCC values every " + interval + "ms", 'ADCC Grabbing');
                     auto_adcc_interval = setInterval(function() {
                         $.get('/adcc', function(res) {
                             if (res.value) {
-                                var value_percentage = (res.value / 1024) * 100;
-                                $("#adcc-progress").attr('value', res.value);
+                                // var value_percentage = (res.value / 1024) * 100;
+                                // $("#adcc-progress").attr('value', res.value);
+                                gauge.set(res.value);
                             }
                         })
                     }, interval);
@@ -49,41 +77,49 @@
         });
     </script>
 
-    <div style="margin:100px;">
-        <nav class="navbar navbar-inverse navbar-static-top">
-            <div class="container">
-                <a class="navbar-brand" href="/">Xpress with Express (and NodeJS)</a>
-                <ul class="nav navbar-nav">
-                    <li class="active">
-                        <a href="/">Home</a>
-                    </li>
-                    <li>
-                        <a href="/adcc">ADCC</a>
-                    </li>
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Relay<span class="caret"></span></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#" class="relay-action" data-relay-action="enable">Enable</a></li>
-                            <li><a href="#" class="relay-action" data-relay-action="disable">Disable</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-        <div class="jumbotron" style="padding:40px;">
-            <h1>What's the button do?!</h1>
+    <nav class="navbar navbar-inverse navbar-static-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">Xpress with Express (and NodeJS)</a>
+            <ul class="nav navbar-nav">
+                <li class="active">
+                    <a href="/">Home</a>
+                </li>
+                <li>
+                    <a href="/adcc">ADCC</a>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Relay<span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" class="relay-action" data-relay-action="enable">Enable</a></li>
+                        <li><a href="#" class="relay-action" data-relay-action="disable">Disable</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="row">
+        <div class="jumbotron col-xs-8 col-xs-offset-2" style="padding:40px;">
+            <h1>What do these buttons do?!</h1>
             <p>Currently we have the "relay" button and an ADCC button, so go ahead and click around!</p>
-            <p>
-                <div class="row">
-                    <div class="col-md-4 col-xs-12 col-md-offset-2">
-                        <a class="btn btn-primary btn-lg relay-action" data-relay-action="toggle" href="#" role="button">Toggle Relay!</a>
-                    </div>
-                    <div class="col-md-4 col-xs-12 col-md-offset-2">
-                        <a class="btn btn-primary btn-lg adcc-action" data-adcc-action="get" href="#" role="button">Get ADCC Value!</a>
-                        <progress id="adcc-progress" role="progressbar" value="0" max="1024"></progress>
-                    </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-5 col-xs-12 col-md-offset-1">
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-xs-12">
+                    <a class="btn btn-primary btn-block btn-lg relay-action" data-relay-action="toggle" href="#" role="button" id="relay-toggle-btn">Toggle Relay!</a>
                 </div>
-            </p>
+            </div>
+        </div>
+        <div class="col-md-5 col-xs-12 col-md-offset-1">
+            <div class="row">
+                <div class="col-md-6 col-xs-12">
+                    <a class="btn btn-primary btn-block btn-lg adcc-action" data-adcc-action="get" href="#" role="button">Get ADCC Value!</a>
+                </div>
+            </div>
+            <div class="row">
+                <canvas class="col-md-offset-0 col-xs-6 col-xs-offset-3" id="adcc-progress"></canvas>
+            </div>
         </div>
     </div>
 </body>
