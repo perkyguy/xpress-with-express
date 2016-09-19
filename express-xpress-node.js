@@ -72,7 +72,7 @@ app
     .get('/', function(req, res) {
         res.sendFile(path.join(__dirname + '/express-xpress-node.html'));
     })
-    .get('/relay/:relayCommand', function(req, res) {
+    .get('/relay/:relayCommand/:relayNum?', function(req, res) {
         if (noClients()) {
             res.send({ msg: 'No Clients...' });
             return;
@@ -80,19 +80,20 @@ app
 
         var reply = { msg: "" };
         if (req.params.relayCommand == "enable") {
-
-            sendToClients('relay enable\r\n');
-            reply.msg = "Shields online...";
+            req.params.relayNum = req.params.relayNum || 1;
+            sendToClients('relay enable ' + req.params.relayNum + '\r\n');
+            reply.msg = "Shields in pod " + req.params.relayNum + " are online!";
         } else if (req.params.relayCommand == "disable") {
-            sendToClients('relay disable\r\n');
-            reply.msg = "Tractor beam disabled...";
+            req.params.relayNum = req.params.relayNum || 1;
+            sendToClients('relay disable ' + req.params.relayNum + '\r\n');
+            reply.msg = "Shields in pod " + req.params.relayNum + " are offline!";
         } else {
             reply.msg = "What?!?!";
         }
 
         res.send(reply);
     })
-    .get('/adcc', function(req, res) {
+    .get('/adcc/:adcNum?', function(req, res) {
         var adcc_callback;
         adcc_callback = (data, client) => {
             if (res.headersSent) {
@@ -100,15 +101,16 @@ app
                 client.removeListener('data', adcc_callback);
                 return;
             }
-            matches = data.toString('utf-8').match('ADC=(\\d+)');
+            matches = data.toString('utf-8').match('ADC(\\d?)=(\\d+)');
             if (matches) {
-                res.send({ msg: "Don't move that dial...or do...or whatever...", value: +matches[1] })
+                res.send({ msg: "Don't move that dial...or do...or whatever...", value: +matches[2], pot_num: +matches[1] })
             } else {
-                res.send({ msg: 'No dice!', value: undefined });
+                res.send({ msg: 'No dice!', value: data.toString() });
             }
 
         };
-        sendToClients('pot value\r\n', {
+        req.params.adcNum = req.params.adcNum || 1;
+        sendToClients('pot value ' + req.params.adcNum + '\r\n', {
             callback: adcc_callback,
             addToXpressOnly: true
         });
